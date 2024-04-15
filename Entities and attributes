@@ -1,0 +1,28 @@
+Entities:
+Employee
+Customer
+Address
+Zip_Code
+Bill
+Payment
+Orders
+Order_Item
+Order_Product
+Voucher
+Product
+Product_Details
+Product_Group
+Review
+
+Relationships:
+
+Employee has a relationship with Address (EmployeeID in Employee table relates to AddressID in Address table).
+Customer has a relationship with Address and Zip_Code (CustomerID in Customer table relates to AddressID in Address table and ZipCode in Zip_Code table).
+Bill has a relationship with Customer (Customer_ID in Bill table relates to CustomerID in Customer table).
+Payment has a relationship with Customer (Customer_ID in Payment table relates to CustomerID in Customer table).
+Orders has a relationship with Customer (Customer_ID in Orders table relates to CustomerID in Customer table).
+Order_Item has a relationship with Orders (Order_ID in Order_Item table relates to Order_ID in Orders table) and also contains a relationship with Product (Product_ID in Order_Item table relates to ProductID in Product table).
+Order_Product has a relationship with Orders (Order_ID in Order_Product table relates to Order_ID in Orders table) and also contains a relationship with Product (Product_ID in Order_Product table relates to ProductID in Product table).
+Voucher doesn't have direct relationships in the provided schema.
+Product_Details has a relationship with Product (ProductID in Product_Details table relates to ProductID in Product table).
+Review has a relationship with Product (Product_ID in Review table relates to ProductID in Product table).
