@@ -4,9 +4,9 @@ import psycopg2
 
 # Connect to your PostgreSQL database
 conn = psycopg2.connect(
-    dbname="your_database_name",
-    user="your_username",
-    password="your_password",
+    dbname="Retail Management System",
+    user="postgres",
+    password="pgadmin4",
     host="localhost",
     port="5432"
 )
