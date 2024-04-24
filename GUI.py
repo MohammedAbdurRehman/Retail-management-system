@@ -10,9 +10,27 @@ conn = psycopg2.connect(
     host="localhost",
     port="5432"
 )
-
-# Create a cursor object to execute SQL queries
 cur = conn.cursor()
+
+def create_products_table():
+    # Create a products table in the database
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS products (
+            productid SERIAL PRIMARY KEY,
+            product_name VARCHAR(255),
+            available_number INTEGER
+        )
+    """)
+    conn.commit()
+    messagebox.showinfo("Success", "Products table created successfully")
+
+def insert_product():
+    # Insert data into the products table
+    name = product_name_entry.get()
+    quantity = product_quantity_entry.get()
+    cur.execute("INSERT INTO products (product_name, available_number) VALUES (%s, %s)", (name, quantity))
+    conn.commit()
+    messagebox.showinfo("Success", "Product data inserted successfully")
 
 def create_employee():
     emp_first_name = entry_first_name.get()
@@ -49,58 +67,86 @@ def delete_employee():
 
 # Create the main window
 window = tk.Tk()
-window.title("Employee Management System")
+window.title("Retail Management System")
 
-# Create labels and entry fields
-label_emp_id = tk.Label(window, text="Employee ID:")
-label_emp_id.grid(row=0, column=0)
-entry_emp_id = tk.Entry(window)
+# Create products management frame
+product_frame = tk.Frame(window)
+product_frame.pack(padx=20, pady=20)
+
+# Product Name
+tk.Label(product_frame, text="Product Name:").grid(row=0, column=0)
+product_name_entry = tk.Entry(product_frame)
+product_name_entry.grid(row=0, column=1)
+
+# Available Number
+tk.Label(product_frame, text="Available Number:").grid(row=1, column=0)
+product_quantity_entry = tk.Entry(product_frame)
+product_quantity_entry.grid(row=1, column=1)
+
+# Insert Product Button
+insert_product_button = tk.Button(product_frame, text="Insert Product", command=insert_product)
+insert_product_button.grid(row=2, columnspan=2)
+
+# Create the products table if not exists
+create_products_table()
+
+# Create employee management frame
+employee_frame = tk.Frame(window)
+employee_frame.pack(padx=20, pady=20)
+
+# Employee ID
+tk.Label(employee_frame, text="Employee ID:").grid(row=0, column=0)
+entry_emp_id = tk.Entry(employee_frame)
 entry_emp_id.grid(row=0, column=1)
 
-label_first_name = tk.Label(window, text="First Name:")
-label_first_name.grid(row=1, column=0)
-entry_first_name = tk.Entry(window)
+# First Name
+tk.Label(employee_frame, text="First Name:").grid(row=1, column=0)
+entry_first_name = tk.Entry(employee_frame)
 entry_first_name.grid(row=1, column=1)
 
-label_last_ssn = tk.Label(window, text="Last SSN:")
-label_last_ssn.grid(row=2, column=0)
-entry_last_ssn = tk.Entry(window)
+# Last SSN
+tk.Label(employee_frame, text="Last SSN:").grid(row=2, column=0)
+entry_last_ssn = tk.Entry(employee_frame)
 entry_last_ssn.grid(row=2, column=1)
 
-label_mail_address = tk.Label(window, text="Mail Address:")
-label_mail_address.grid(row=3, column=0)
-entry_mail_address = tk.Entry(window)
+# Mail Address
+tk.Label(employee_frame, text="Mail Address:").grid(row=3, column=0)
+entry_mail_address = tk.Entry(employee_frame)
 entry_mail_address.grid(row=3, column=1)
 
-label_designation = tk.Label(window, text="Designation:")
-label_designation.grid(row=4, column=0)
-entry_designation = tk.Entry(window)
+# Designation
+tk.Label(employee_frame, text="Designation:").grid(row=4, column=0)
+entry_designation = tk.Entry(employee_frame)
 entry_designation.grid(row=4, column=1)
 
-label_department = tk.Label(window, text="Department:")
-label_department.grid(row=5, column=0)
-entry_department = tk.Entry(window)
+# Department
+tk.Label(employee_frame, text="Department:").grid(row=5, column=0)
+entry_department = tk.Entry(employee_frame)
 entry_department.grid(row=5, column=1)
 
-label_salary = tk.Label(window, text="Salary:")
-label_salary.grid(row=6, column=0)
-entry_salary = tk.Entry(window)
+# Salary
+tk.Label(employee_frame, text="Salary:").grid(row=6, column=0)
+entry_salary = tk.Entry(employee_frame)
 entry_salary.grid(row=6, column=1)
 
-label_employee_type = tk.Label(window, text="Employee Type:")
-label_employee_type.grid(row=7, column=0)
-entry_employee_type = tk.Entry(window)
+# Employee Type
+tk.Label(employee_frame, text="Employee Type:").grid(row=7, column=0)
+entry_employee_type = tk.Entry(employee_frame)
 entry_employee_type.grid(row=7, column=1)
 
-# Create buttons
-btn_create_employee = tk.Button(window, text="Create Employee", command=create_employee)
+# Buttons for employee management
+btn_create_employee = tk.Button(employee_frame, text="Create Employee", command=create_employee)
 btn_create_employee.grid(row=8, column=0)
 
-btn_read_employee = tk.Button(window, text="Read Employee", command=read_employee)
+btn_read_employee = tk.Button(employee_frame, text="Read Employee", command=read_employee)
 btn_read_employee.grid(row=8, column=1)
 
-btn_delete_employee = tk.Button(window, text="Delete Employee", command=delete_employee)
+btn_delete_employee = tk.Button(employee_frame, text="Delete Employee", command=delete_employee)
 btn_delete_employee.grid(row=8, column=2)
 
 # Run the main loop
 window.mainloop()
+
+# Close the database connection
+cur.close()
+conn.close()
