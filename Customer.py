@@ -1,20 +1,42 @@
 import tkinter as tk
 from tkinter import messagebox
 import psycopg2
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
 
-# Connect to your PostgreSQL database
-conn = psycopg2.connect(
+# Initialize PostgreSQL connection
+conn_postgres = psycopg2.connect(
     dbname="Retail Management System",
     user="postgres",
     password="pgadmin4",
     host="localhost",
     port="5432"
 )
-cur = conn.cursor()
+cur_postgres = conn_postgres.cursor()
 
-def create_customer_table():
-    # Create a customer table in the database
-    cur.execute("""
+# Initialize Firebase Admin
+cred_firebase = credentials.Certificate('serviceAccountKey.json')
+firebase_admin.initialize_app(cred_firebase)
+db_firestore = firestore.client()
+
+def insert_data():
+    # Insert data into PostgreSQL
+    insert_customer_postgres()
+
+    # Insert data into Firebase
+    create_customer_firestore()
+
+def delete_data():
+    # Delete data from PostgreSQL
+    delete_customer_postgres()
+
+    # Delete data from Firebase
+    delete_customer_firestore()
+
+def create_customer_table_postgres():
+    # Create a customer table in PostgreSQL
+    cur_postgres.execute("""
         CREATE TABLE IF NOT EXISTS customer (
             customerid SERIAL PRIMARY KEY NOT NULL,
             first_name VARCHAR(50),
@@ -24,27 +46,52 @@ def create_customer_table():
             category VARCHAR(50)
         )
     """)
-    conn.commit()
-    messagebox.showinfo("Success", "Customer table created successfully")
+    conn_postgres.commit()
+    messagebox.showinfo("Success", "PostgreSQL Customer table created successfully")
 
-def insert_customer():
-    # Insert data into the customer table
+def insert_customer_postgres():
+    # Insert data into the customer table in PostgreSQL
     first_name = first_name_entry.get()
     last_name = last_name_entry.get()
     mail_address = mail_address_entry.get()
     phone_number = phone_number_entry.get()
     category = category_entry.get()
-    cur.execute("INSERT INTO customer (first_name, last_name, mail_address, phone_number, category) VALUES (%s, %s, %s, %s, %s)",
+    cur_postgres.execute("INSERT INTO customer (first_name, last_name, mail_address, phone_number, category) VALUES (%s, %s, %s, %s, %s)",
                 (first_name, last_name, mail_address, phone_number, category))
-    conn.commit()
-    messagebox.showinfo("Success", "Customer data inserted successfully")
+    conn_postgres.commit()
+    messagebox.showinfo("Success", "PostgreSQL Customer data inserted successfully")
 
-def delete_customer():
-    # Delete customer from the customer table
+def delete_customer_postgres():
+    # Delete customer from the customer table in PostgreSQL
     customer_id = customer_id_entry.get()
-    cur.execute("DELETE FROM customer WHERE customerid = %s", (customer_id,))
-    conn.commit()
-    messagebox.showinfo("Success", "Customer deleted successfully")
+    cur_postgres.execute("DELETE FROM customer WHERE customerid = %s", (customer_id,))
+    conn_postgres.commit()
+    messagebox.showinfo("Success", "PostgreSQL Customer deleted successfully")
+
+def create_customer_firestore():
+    # Create a customer document in Firestore
+    first_name = first_name_entry.get()
+    last_name = last_name_entry.get()
+    mail_address = mail_address_entry.get()
+    phone_number = phone_number_entry.get()
+    category = category_entry.get()
+
+    data = {
+        'first_name': first_name,
+        'last_name': last_name,
+        'mail_address': mail_address,
+        'phone_number': phone_number,
+        'category': category
+    }
+
+    doc_ref = db_firestore.collection('customers').add(data)
+    messagebox.showinfo("Success", "Firebase Customer data inserted successfully")
+
+def delete_customer_firestore():
+    # Delete customer document from Firestore
+    customer_id = customer_id_entry.get()
+    db_firestore.collection('customers').document(customer_id).delete()
+    messagebox.showinfo("Success", "Firebase Customer deleted successfully")
 
 # Create the main window
 window = tk.Tk()
@@ -79,25 +126,20 @@ tk.Label(customer_frame, text="Category:").grid(row=4, column=0)
 category_entry = tk.Entry(customer_frame)
 category_entry.grid(row=4, column=1)
 
-# Insert Customer Button
-insert_customer_button = tk.Button(customer_frame, text="Insert Customer", command=insert_customer)
-insert_customer_button.grid(row=5, columnspan=2)
+# Insert and Delete Buttons
+insert_button = tk.Button(customer_frame, text="Insert Data", command=insert_data)
+insert_button.grid(row=5, column=0, padx=5, pady=5)
+delete_button = tk.Button(customer_frame, text="Delete Data", command=delete_data)
+delete_button.grid(row=5, column=1, padx=5, pady=5)
 
 # Customer ID for deletion
 tk.Label(customer_frame, text="Customer ID for Deletion:").grid(row=6, column=0)
 customer_id_entry = tk.Entry(customer_frame)
 customer_id_entry.grid(row=6, column=1)
 
-# Delete Customer Button
-delete_customer_button = tk.Button(customer_frame, text="Delete Customer", command=delete_customer)
-delete_customer_button.grid(row=7, columnspan=2)
-
-# Create the customer table if not exists
-create_customer_table()
-
 # Run the main loop
 window.mainloop()
 
-# Close the database connection
-cur.close()
-conn.close()
+# Close PostgreSQL database connection
+cur_postgres.close()
+conn_postgres.close()
