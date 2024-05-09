@@ -1,107 +1,201 @@
 import tkinter as tk
 from tkinter import messagebox
 import psycopg2
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# Initialize Firebase Admin
+cred_firebase = credentials.Certificate('serviceAccountKey.json')
+firebase_admin.initialize_app(cred_firebase)
+db_firestore = firestore.client()
 
 # Connect to your PostgreSQL database
-conn = psycopg2.connect(
-    dbname="Retail Management System",
+conn_postgres = psycopg2.connect(
+    dbname="Retail Management",
     user="postgres",
-    password="pgadmin4",
+    password="ayesha",
     host="localhost",
     port="5432"
 )
-cur = conn.cursor()
+cur_postgres = conn_postgres.cursor()
 
-def create_employee():
-    emp_first_name = entry_first_name.get()
-    emp_last_ssn = entry_last_ssn.get()
-    emp_mail_address = entry_mail_address.get()
-    designation = entry_designation.get()
-    department = entry_department.get()
-    salary = entry_salary.get()
-    employee_type = entry_employee_type.get()
+def create_employee_table_postgres():
+    # Create an employee table in PostgreSQL
+    cur_postgres.execute("""
+        CREATE TABLE IF NOT EXISTS Employee (
+            EmployeeID VARCHAR(50) PRIMARY KEY,
+            EmpFirst_Name VARCHAR(50),
+            EmpLast_SSN VARCHAR(100),
+            EmpMail_Address VARCHAR(100),
+            Designation VARCHAR(50),
+            Department VARCHAR(50),
+            Salary DECIMAL(10, 2),
+            Employee_Type VARCHAR(20)
+        )
+    """)
+    conn_postgres.commit()
+    messagebox.showinfo(title="Success", message="PostgreSQL Employee table created successfully")
 
-    # Execute SQL INSERT query
-    try:
-        cur.execute("INSERT INTO Employee (EmpFirst_Name, EmpLast_SSN, EmpMail_Address, Designation, Department, Salary, Employee_Type) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                    (emp_first_name, emp_last_ssn, emp_mail_address, designation, department, salary, employee_type))
-        conn.commit()
-        messagebox.showinfo("Success", "Employee created successfully!")
-    except Exception as e:
-        messagebox.showerror("Error", f"Error creating employee: {str(e)}")
+def insert_employee_postgres():
+    # Insert data into the employee table in PostgreSQL
+    emp_id = emp_id_entry.get()
+    emp_first_name = emp_first_name_entry.get()
+    emp_last_ssn = emp_last_ssn_entry.get()
+    emp_mail_address = emp_mail_address_entry.get()
+    designation = designation_entry.get()
+    department = department_entry.get()
+    salary = salary_entry.get()
+    employee_type = employee_type_entry.get()
 
-def read_employee():
-    emp_id = entry_emp_id.get()
-    cur.execute("SELECT * FROM Employee WHERE EmployeeID = %s", (emp_id,))
-    employee = cur.fetchone()
-    if employee:
-        messagebox.showinfo("Employee Details", f"EmployeeID: {employee[0]}\nName: {employee[1]} {employee[2]}\nMail Address: {employee[3]}\nDesignation: {employee[4]}\nDepartment: {employee[5]}\nSalary: {employee[6]}\nEmployee Type: {employee[7]}")
+    cur_postgres.execute("""
+        INSERT INTO Employee (EmployeeID, EmpFirst_Name, EmpLast_SSN, EmpMail_Address, Designation, Department, Salary, Employee_Type) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, (emp_id, emp_first_name, emp_last_ssn, emp_mail_address, designation, department, salary, employee_type))
+    conn_postgres.commit()
+    messagebox.showinfo(title="Success", message="PostgreSQL Employee data inserted successfully")
+
+def delete_employee_postgres():
+    # Delete employee from the employee table in PostgreSQL
+    emp_id = delete_emp_id_entry.get()
+    cur_postgres.execute("DELETE FROM Employee WHERE EmployeeID = %s", (emp_id,))
+    conn_postgres.commit()
+    messagebox.showinfo(title="Success", message="PostgreSQL Employee deleted successfully")
+
+def view_employees_postgres():
+    # View employees from the employee table in PostgreSQL
+    cur_postgres.execute("SELECT * FROM Employee")
+    rows = cur_postgres.fetchall()
+    if rows:
+        employee_records = ""
+        for row in rows:
+            employee_records += f"Employee ID: {row[0]}, Name: {row[1]} {row[2]}, Mail Address: {row[3]}, Designation: {row[4]}, Department: {row[5]}, Salary: {row[6]}, Employee Type: {row[7]}\n"
+        messagebox.showinfo(title="Employee Records (PostgreSQL)", message=employee_records)
     else:
-        messagebox.showerror("Error", "Employee not found!")
+        messagebox.showinfo(title="Employee Records (PostgreSQL)", message="No employee records found")
 
-def delete_employee():
-    emp_id = entry_emp_id.get()
-    cur.execute("DELETE FROM Employee WHERE EmployeeID = %s", (emp_id,))
-    conn.commit()
-    messagebox.showinfo("Success", "Employee deleted successfully!")
+def insert_employee_firestore():
+    # Insert data into the employee collection in Firebase
+    emp_id = emp_id_entry.get()
+    emp_first_name = emp_first_name_entry.get()
+    emp_last_ssn = emp_last_ssn_entry.get()
+    emp_mail_address = emp_mail_address_entry.get()
+    designation = designation_entry.get()
+    department = department_entry.get()
+    salary = salary_entry.get()
+    employee_type = employee_type_entry.get()
+
+    data = {
+        'EmpFirst_Name': emp_first_name,
+        'EmpLast_SSN': emp_last_ssn,
+        'EmpMail_Address': emp_mail_address,
+        'Designation': designation,
+        'Department': department,
+        'Salary': salary,
+        'Employee_Type': employee_type
+    }
+
+    db_firestore.collection('employees').document(emp_id).set(data)
+    messagebox.showinfo(title="Success", message="Firebase Employee data inserted successfully")
+
+def delete_employee_firestore():
+    # Delete employee from the employee collection in Firebase
+    emp_id = delete_emp_id_entry.get()
+    db_firestore.collection('employees').document(emp_id).delete()
+    messagebox.showinfo(title="Success", message="Firebase Employee deleted successfully")
+
+def view_employees_firestore():
+    # View employees from the employee collection in Firebase
+    docs = db_firestore.collection('employees').stream()
+    employee_records = ""
+    for doc in docs:
+        employee_data = doc.to_dict()
+        employee_records += f"Employee ID: {doc.id}, Name: {employee_data['EmpFirst_Name']} {employee_data['EmpLast_SSN']}, Mail Address: {employee_data['EmpMail_Address']}, Designation: {employee_data['Designation']}, Department: {employee_data['Department']}, Salary: {employee_data['Salary']}, Employee Type: {employee_data['Employee_Type']}\n"
+    if employee_records:
+        messagebox.showinfo(title="Employee Records (Firebase)", message=employee_records)
+    else:
+        messagebox.showinfo(title="Employee Records (Firebase)", message="No employee records found in Firebase")
 
 # Create the main window
 window = tk.Tk()
-window.title("Retail Management System")
+window.title("Employee Management")
+
+# Create employee management frame
+employee_frame = tk.Frame(window)
+employee_frame.pack(padx=20, pady=20)
 
 # Employee ID
 tk.Label(employee_frame, text="Employee ID:").grid(row=0, column=0)
-entry_emp_id = tk.Entry(employee_frame)
-entry_emp_id.grid(row=0, column=1)
+emp_id_entry = tk.Entry(employee_frame)
+emp_id_entry.grid(row=0, column=1)
 
 # First Name
 tk.Label(employee_frame, text="First Name:").grid(row=1, column=0)
-entry_first_name = tk.Entry(employee_frame)
-entry_first_name.grid(row=1, column=1)
+emp_first_name_entry = tk.Entry(employee_frame)
+emp_first_name_entry.grid(row=1, column=1)
 
 # Last SSN
 tk.Label(employee_frame, text="Last SSN:").grid(row=2, column=0)
-entry_last_ssn = tk.Entry(employee_frame)
-entry_last_ssn.grid(row=2, column=1)
+emp_last_ssn_entry = tk.Entry(employee_frame)
+emp_last_ssn_entry.grid(row=2, column=1)
 
 # Mail Address
 tk.Label(employee_frame, text="Mail Address:").grid(row=3, column=0)
-entry_mail_address = tk.Entry(employee_frame)
-entry_mail_address.grid(row=3, column=1)
+emp_mail_address_entry = tk.Entry(employee_frame)
+emp_mail_address_entry.grid(row=3, column=1)
 
 # Designation
 tk.Label(employee_frame, text="Designation:").grid(row=4, column=0)
-entry_designation = tk.Entry(employee_frame)
-entry_designation.grid(row=4, column=1)
+designation_entry = tk.Entry(employee_frame)
+designation_entry.grid(row=4, column=1)
 
 # Department
 tk.Label(employee_frame, text="Department:").grid(row=5, column=0)
-entry_department = tk.Entry(employee_frame)
-entry_department.grid(row=5, column=1)
+department_entry = tk.Entry(employee_frame)
+department_entry.grid(row=5, column=1)
 
 # Salary
 tk.Label(employee_frame, text="Salary:").grid(row=6, column=0)
-entry_salary = tk.Entry(employee_frame)
-entry_salary.grid(row=6, column=1)
+salary_entry = tk.Entry(employee_frame)
+salary_entry.grid(row=6, column=1)
 
 # Employee Type
 tk.Label(employee_frame, text="Employee Type:").grid(row=7, column=0)
-entry_employee_type = tk.Entry(employee_frame)
-entry_employee_type.grid(row=7, column=1)
+employee_type_entry = tk.Entry(employee_frame)
+employee_type_entry.grid(row=7, column=1)
 
-# Buttons for employee management
-btn_create_employee = tk.Button(employee_frame, text="Create Employee", command=create_employee)
-btn_create_employee.grid(row=8, column=0)
+def perform_operations():
+    # Insert data into PostgreSQL and Firebase
+    insert_employee_postgres()
+    insert_employee_firestore()
 
-btn_read_employee = tk.Button(employee_frame, text="Read Employee", command=read_employee)
-btn_read_employee.grid(row=8, column=1)
+def delete_data():
+    # Delete data from PostgreSQL and Firebase
+    delete_employee_postgres()
+    delete_employee_firestore()
 
-btn_delete_employee = tk.Button(employee_frame, text="Delete Employee", command=delete_employee)
-btn_delete_employee.grid(row=8, column=2)
+def view_data():
+    # View data from PostgreSQL and Firebase
+    view_employees_postgres()
+    view_employees_firestore()
+
+# Perform Operations Button
+perform_operations_button = tk.Button(employee_frame, text="Insert Employee", command=perform_operations)
+perform_operations_button.grid(row=8, column=0)
+
+# Delete Employee Button
+delete_employee_button = tk.Button(employee_frame, text="Delete Employee", command=delete_data)
+delete_employee_button.grid(row=8, column=1)
+
+# View Employees Button
+view_employees_button = tk.Button(employee_frame, text="View Employees", command=view_data)
+view_employees_button.grid(row=8, column=2)
+
+# Create the employee table if not exists in PostgreSQL
+create_employee_table_postgres()
 
 # Run the main loop
 window.mainloop()
 
-# Close the database connection
-cur.close()
-conn.close()
+# Close PostgreSQL database connection
+cur_postgres.close()
+conn_postgres.close()
