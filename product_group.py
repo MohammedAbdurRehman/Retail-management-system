@@ -1,9 +1,18 @@
 import tkinter as tk
 from tkinter import messagebox
 import psycopg2
+import firebase_admin
+from firebase_admin import credentials, firestore
 
+
+# Initialize Firebase
+cred_firebase = credentials.Certificate('serviceAccountKey.json')
+firebase_admin.initialize_app(cred_firebase)
+db_firestore = firestore.client()
+
+# Initialize PostgreSQL connection
 conn = psycopg2.connect(
-    dbname="Retail Management System",
+    dbname="Retail Management",
     user="postgres",
     password="ayesha",
     host="localhost",
@@ -26,12 +35,22 @@ def insert_product_group():
     cur.execute("INSERT INTO Product_Group(Group_Name) VALUES (%s)",
                 (group_name,))
     conn.commit()
+
+    # Firebase
+    firebase_db.reference('Product_Group').push({
+        'Group_Name': group_name
+    })
+
     messagebox.showinfo(title="Success", message="Product group inserted successfully")
 
 def delete_product_group():
     group_id = group_id_entry.get()
     cur.execute("DELETE FROM Product_Group WHERE Group_ID = %s", (group_id,))
     conn.commit()
+
+    # Firebase
+    firebase_db.reference('Product_Group').child(group_id).delete()
+
     messagebox.showinfo(title="Success", message="Product group deleted successfully")
 
 def view_product_groups():
