@@ -122,7 +122,7 @@ def view_data():
     view_vouchers_firestore()
 
 # Perform Operations Button
-perform_operations_button = tk.Button(voucher_frame, text="Perform Operations", command=perform_operations)
+perform_operations_button = tk.Button(voucher_frame, text="Insert Voucher", command=perform_operations)
 perform_operations_button.grid(row=2, column=0)
 
 # Delete Voucher Button
