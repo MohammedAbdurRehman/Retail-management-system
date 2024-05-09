@@ -1,9 +1,18 @@
 import tkinter as tk
 from tkinter import messagebox
 import psycopg2
+import firebase_admin
+from firebase_admin import credentials, firestore
 
+
+# Initialize Firebase
+cred_firebase = credentials.Certificate('serviceAccountKey.json')
+firebase_admin.initialize_app(cred_firebase)
+db_firestore = firestore.client()
+
+# Initialize PostgreSQL connection
 conn = psycopg2.connect(
-    dbname="Retail Management System",
+    dbname="Retail Management",
     user="postgres",
     password="ayesha",
     host="localhost",
@@ -31,12 +40,24 @@ def insert_review():
     cur.execute("INSERT INTO Review(Review_ID, Quality, Defect_Percentage, ProductID) VALUES (%s, %s, %s, %s)",
                 (review_id, quality, defect_percentage, product_id))
     conn.commit()
+
+    # Firebase
+    firebase_db.reference('Review').child(review_id).set({
+        'Quality': quality,
+        'Defect_Percentage': defect_percentage,
+        'ProductID': product_id
+    })
+
     messagebox.showinfo(title="Success", message="Review data inserted successfully")
 
 def delete_review():
     review_id = review_id_entry.get()
     cur.execute("DELETE FROM Review WHERE Review_ID = %s", (review_id,))
     conn.commit()
+
+    # Firebase
+    firebase_db.reference('Review').child(review_id).delete()
+
     messagebox.showinfo(title="Success", message="Review deleted successfully")
 
 def view_reviews():
