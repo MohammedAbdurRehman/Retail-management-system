@@ -12,26 +12,6 @@ conn = psycopg2.connect(
 )
 cur = conn.cursor()
 
-def create_products_table():
-    # Create a products table in the database
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS products (
-            productid SERIAL PRIMARY KEY,
-            product_name VARCHAR(255),
-            available_number INTEGER
-        )
-    """)
-    conn.commit()
-    messagebox.showinfo("Success", "Products table created successfully")
-
-def insert_product():
-    # Insert data into the products table
-    name = product_name_entry.get()
-    quantity = product_quantity_entry.get()
-    cur.execute("INSERT INTO products (product_name, available_number) VALUES (%s, %s)", (name, quantity))
-    conn.commit()
-    messagebox.showinfo("Success", "Product data inserted successfully")
-
 def create_employee():
     emp_first_name = entry_first_name.get()
     emp_last_ssn = entry_last_ssn.get()
@@ -68,31 +48,6 @@ def delete_employee():
 # Create the main window
 window = tk.Tk()
 window.title("Retail Management System")
-
-# Create products management frame
-product_frame = tk.Frame(window)
-product_frame.pack(padx=20, pady=20)
-
-# Product Name
-tk.Label(product_frame, text="Product Name:").grid(row=0, column=0)
-product_name_entry = tk.Entry(product_frame)
-product_name_entry.grid(row=0, column=1)
-
-# Available Number
-tk.Label(product_frame, text="Available Number:").grid(row=1, column=0)
-product_quantity_entry = tk.Entry(product_frame)
-product_quantity_entry.grid(row=1, column=1)
-
-# Insert Product Button
-insert_product_button = tk.Button(product_frame, text="Insert Product", command=insert_product)
-insert_product_button.grid(row=2, columnspan=2)
-
-# Create the products table if not exists
-create_products_table()
-
-# Create employee management frame
-employee_frame = tk.Frame(window)
-employee_frame.pack(padx=20, pady=20)
 
 # Employee ID
 tk.Label(employee_frame, text="Employee ID:").grid(row=0, column=0)
