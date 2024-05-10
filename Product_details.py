@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox,ttk
 import psycopg2
 import firebase_admin
 from firebase_admin import credentials
@@ -120,6 +120,73 @@ def delete_product_details_firestore():
     except Exception as e:
         raise e
 
+def view_product_details_postgres():
+    try:
+        cur_postgres.execute("SELECT * FROM product_details")
+        rows = cur_postgres.fetchall()
+        if rows:
+            # Create a new window for displaying the table
+            view_window = tk.Toplevel(window)
+            view_window.title("Product Details Records (PostgreSQL)")
+
+            # Create Treeview widget for displaying data in tabular form
+            tree = ttk.Treeview(view_window, columns=("Product ID", "Weight", "Width", "Colour", "Height"))
+            tree.heading("#0", text="Index")
+            tree.heading("#1", text="Product ID")
+            tree.heading("#2", text="Weight")
+            tree.heading("#3", text="Width")
+            tree.heading("#4", text="Colour")
+            tree.heading("#5", text="Height")
+
+            for i, row in enumerate(rows):
+                tree.insert("", tk.END, text=str(i+1), values=row)
+
+            tree.pack(expand=True, fill="both")
+        else:
+            messagebox.showinfo(title="Product Details Records", message="No product details records found in PostgreSQL")
+    except psycopg2.Error as e:
+        messagebox.showerror(title="Error", message=f"Error viewing data from PostgreSQL: {e}")
+
+def view_product_details_firestore():
+    try:
+        docs = db_firestore.collection('product_details').stream()
+        if docs:
+            # Create a new window for displaying the table
+            view_window = tk.Toplevel(window)
+            view_window.title("Product Details Records (Firebase)")
+
+            # Create Treeview widget for displaying data in tabular form
+            tree = ttk.Treeview(view_window, columns=("Product ID", "Weight", "Width", "Colour", "Height"))
+            tree.heading("#0", text="Index")
+            tree.heading("#1", text="Product ID")
+            tree.heading("#2", text="Weight")
+            tree.heading("#3", text="Width")
+            tree.heading("#4", text="Colour")
+            tree.heading("#5", text="Height")
+
+            for i, doc in enumerate(docs):
+                product_data = doc.to_dict()
+                product_values = (
+                    doc.id,
+                    product_data['weight'],
+                    product_data['width'],
+                    product_data['colour'],
+                    product_data['height']
+                )
+                tree.insert("", tk.END, text=str(i+1), values=product_values)
+
+            tree.pack(expand=True, fill="both")
+        else:
+            messagebox.showinfo(title="Product Details Records", message="No product details records found in Firebase")
+    except Exception as e:
+        messagebox.showerror(title="Error", message=f"Error viewing data from Firebase: {e}")
+
+def view_data():
+    try:
+        view_product_details_firestore()
+        view_product_details_postgres()
+    except Exception as e:
+        messagebox.showerror(title="Error",message=f"No data found: {e}")
 # Create the main window
 window = tk.Tk()
 window.title("Product_Details Management")
@@ -166,6 +233,9 @@ productid_entry_del.grid(row=6, column=1)
 delete_product_details_button = tk.Button(product_details_frame, text="Delete Product_Details", command=delete_product_details)
 delete_product_details_button.grid(row=7, column=0)
 
+#View Button
+view_data_button = tk.Button(product_details_frame, text="View Product Details", command=view_data)
+view_data_button.grid(row=5, column=1)
 # Create the product_details table if not exists in PostgreSQL
 create_product_details_table_postgres()
 
