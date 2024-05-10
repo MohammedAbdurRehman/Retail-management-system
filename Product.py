@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox,ttk
 import psycopg2
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -9,87 +9,130 @@ cred_firebase = credentials.Certificate('serviceAccountKey.json')
 firebase_admin.initialize_app(cred_firebase)
 db_firestore = firestore.client()
 
-
 # Connect to your PostgreSQL database
 conn_postgres = psycopg2.connect(
-    dbname="Retail Management",
+    dbname="Retail Management System",
     user="postgres",
-    password="ayesha",
+    password="pgadmin4",
     host="localhost",
     port="5432"
 )
 cur_postgres = conn_postgres.cursor()
 
-
 def create_product_table_postgres():
-    # Create a products table in PostgreSQL
-    cur_postgres.execute("""
-        CREATE TABLE IF NOT EXISTS product (
-            productid SERIAL PRIMARY KEY,
-            product_name VARCHAR(100),
-            available_number INTEGER
-        )
-    """)
-    conn_postgres.commit()
-    messagebox.showinfo("Success", "PostgreSQL Product table created successfully")
+    try:
+        # Create a products table in PostgreSQL
+        cur_postgres.execute("""
+            CREATE TABLE IF NOT EXISTS product (
+                productid SERIAL PRIMARY KEY,
+                product_name VARCHAR(100),
+                available_number INTEGER
+            )
+        """)
+        conn_postgres.commit()
+        messagebox.showinfo("Success", "PostgreSQL Product table created successfully")
+    except psycopg2.Error as e:
+        messagebox.showerror("PostgreSQL Error", f"Error creating product table: {e}")
 
 def insert_product_postgres():
-    # Insert data into the products table in PostgreSQL
-    name = product_name_entry.get()
-    quantity = product_quantity_entry.get()
-    cur_postgres.execute("INSERT INTO product (product_name, available_number) VALUES (%s, %s)", (name, quantity))
-    conn_postgres.commit()
-    messagebox.showinfo("Success", "PostgreSQL Product data inserted successfully")
+    try:
+        # Insert data into the products table in PostgreSQL
+        name = product_name_entry.get()
+        quantity = product_quantity_entry.get()
+        cur_postgres.execute("INSERT INTO product (product_name, available_number) VALUES (%s, %s)", (name, quantity))
+        conn_postgres.commit()
+        messagebox.showinfo("Success", "PostgreSQL Product data inserted successfully")
+    except psycopg2.Error as e:
+        messagebox.showerror("PostgreSQL Error", f"Error inserting product data: {e}")
 
 def delete_product_postgres():
-    # Delete product from the products table in PostgreSQL
-    product_id = product_id_entry.get()
-    cur_postgres.execute("DELETE FROM product WHERE productid = %s", (product_id,))
-    conn_postgres.commit()
-    messagebox.showinfo("Success", "PostgreSQL Product deleted successfully")
+    try:
+        # Delete product from the products table in PostgreSQL
+        product_id = product_id_entry.get()
+        cur_postgres.execute("DELETE FROM product WHERE productid = %s", (product_id,))
+        conn_postgres.commit()
+        messagebox.showinfo("Success", "PostgreSQL Product deleted successfully")
+    except psycopg2.Error as e:
+        messagebox.showerror("PostgreSQL Error", f"Error deleting product: {e}")
 
-def view_products_postgres():
-    # View products from the products table in PostgreSQL
-    cur_postgres.execute("SELECT * FROM product")
-    rows = cur_postgres.fetchall()
-    if rows:
-        product_records = ""
-        for row in rows:
-            product_records += f"Product ID: {row[0]}, Product Name: {row[1]}, Available Number: {row[2]}\n"
-        messagebox.showinfo("Product Records (PostgreSQL)", product_records)
-    else:
-        messagebox.showinfo("Product Records (PostgreSQL)", "No product records found")
 
 def insert_product_firestore():
-    # Insert data into the products collection in Firebase
-    name = product_name_entry.get()
-    quantity = product_quantity_entry.get()
+    try:
+        # Insert data into the products collection in Firebase
+        name = product_name_entry.get()
+        quantity = product_quantity_entry.get()
 
-    data = {
-        'product_name': name,
-        'available_number': quantity
-    }
+        data = {
+            'product_name': name,
+            'available_number': quantity
+        }
 
-    db_firestore.collection('products').add(data)
-    messagebox.showinfo("Success", "Firebase Product data inserted successfully")
+        db_firestore.collection('products').add(data)
+        messagebox.showinfo("Success", "Firebase Product data inserted successfully")
+    except Exception as e:
+        messagebox.showerror("Firebase Error", f"Error inserting product data: {e}")
 
 def delete_product_firestore():
-    # Delete product from the products collection in Firebase
-    product_id = product_id_entry.get()
-    db_firestore.collection('products').document(product_id).delete()
-    messagebox.showinfo("Success", "Firebase Product deleted successfully")
+    try:
+        # Delete product from the products collection in Firebase
+        product_id = product_id_entry.get()
+        db_firestore.collection('products').document(product_id).delete()
+        messagebox.showinfo("Success", "Firebase Product deleted successfully")
+    except Exception as e:
+        messagebox.showerror("Firebase Error", f"Error deleting product: {e}")
+
+def view_products_postgres():
+    try:
+        cur_postgres.execute("SELECT product_name, available_number FROM product")
+        rows = cur_postgres.fetchall()
+        if rows:
+            # Create a new window for displaying the table
+            view_window = tk.Toplevel(window)
+            view_window.title("Product Records (PostgreSQL)")
+
+            # Create Treeview widget for displaying data in tabular form
+            tree = ttk.Treeview(view_window, columns=("Product Name", "Available Number"))
+            tree.heading("#0", text="Index")
+            tree.heading("#1", text="Product Name")
+            tree.heading("#2", text="Available Number")
+
+            for i, row in enumerate(rows):
+                tree.insert("", tk.END, text=str(i+1), values=row)
+
+            tree.pack(expand=True, fill="both")
+        else:
+            messagebox.showinfo(title="Product Records", message="No product records found in PostgreSQL")
+    except psycopg2.Error as e:
+        messagebox.showerror(title="PostgreSQL Error", message=f"Error viewing product records: {e}")
 
 def view_products_firestore():
-    # View products from the products collection in Firebase
-    docs = db_firestore.collection('products').stream()
-    product_records = ""
-    for doc in docs:
-        product_data = doc.to_dict()
-        product_records += f"Product ID: {doc.id}, Product Name: {product_data['product_name']}, Available Number: {product_data['available_number']}\n"
-    if product_records:
-        messagebox.showinfo("Product Records (Firebase)", product_records)
-    else:
-        messagebox.showinfo("Product Records (Firebase)", "No product records found in Firebase")
+    try:
+        docs = db_firestore.collection('products').stream()
+        if docs:
+            # Create a new window for displaying the table
+            view_window = tk.Toplevel(window)
+            view_window.title("Product Records (Firebase)")
+
+            # Create Treeview widget for displaying data in tabular form
+            tree = ttk.Treeview(view_window, columns=("Product Name", "Available Number"))
+            tree.heading("#0", text="Index")
+            tree.heading("#1", text="Product Name")
+            tree.heading("#2", text="Available Number")
+
+            for i, doc in enumerate(docs):
+                product_data = doc.to_dict()
+                product_values = (
+                    product_data['product_name'],
+                    product_data['available_number']
+                )
+                tree.insert("", tk.END, text=str(i+1), values=product_values)
+
+            tree.pack(expand=True, fill="both")
+        else:
+            messagebox.showinfo(title="Product Records", message="No product records found in Firebase")
+    except Exception as e:
+        messagebox.showerror(title="Firebase Error", message=f"Error viewing product records: {e}")
+
 
 # Create the main window
 window = tk.Tk()
