@@ -20,77 +20,105 @@ cred_firebase = credentials.Certificate('serviceAccountKey.json')
 firebase_admin.initialize_app(cred_firebase)
 db_firestore = firestore.client()
 
-def insert_data():
-    # Insert data into PostgreSQL
-    insert_product_details_postgres()
+def handle_error(message):
+    messagebox.showerror(title="Error", message=message)
 
-    # Insert data into Firebase
-    insert_product_details_firestore()
+def insert_data():
+    try:
+        # Insert data into PostgreSQL
+        insert_product_details_postgres()
+
+        # Insert data into Firebase
+        insert_product_details_firestore()
+        messagebox.showinfo("Success", "Data inserted successfully")
+    except psycopg2.Error as e:
+        handle_error(f"PostgreSQL Error: {e}")
+    except Exception as e:
+        handle_error(f"Firebase Error: {e}")
 
 def delete_data():
-    # Delete data from PostgreSQL
-    delete_product_details_postgres()
+    try:
+        # Delete data from PostgreSQL
+        delete_product_details_postgres()
 
-    # Delete data from Firebase
-    delete_product_details_firestore()
+        # Delete data from Firebase
+        delete_product_details_firestore()
+        messagebox.showinfo("Success", "Data deleted successfully")
+    except psycopg2.Error as e:
+        handle_error(f"PostgreSQL Error: {e}")
+    except Exception as e:
+        handle_error(f"Firebase Error: {e}")
 
 def create_product_details_table_postgres():
-    # Create a product_details table in PostgreSQL
-    cur_postgres.execute("""
-        CREATE TABLE IF NOT EXISTS product_details (
-            productid SERIAL PRIMARY KEY,
-            weight NUMERIC(10),
-            width NUMERIC(10),
-            colour VARCHAR(50),
-            height NUMERIC(10)
-        )
-    """)
-    conn_postgres.commit()
-    messagebox.showinfo("Success", "PostgreSQL Product_Details table created successfully")
+    try:
+        # Create a product_details table in PostgreSQL
+        cur_postgres.execute("""
+            CREATE TABLE IF NOT EXISTS product_details (
+                productid SERIAL PRIMARY KEY,
+                weight NUMERIC(10),
+                width NUMERIC(10),
+                colour VARCHAR(50),
+                height NUMERIC(10)
+            )
+        """)
+        conn_postgres.commit()
+        messagebox.showinfo("Success", "PostgreSQL Product_Details table created successfully")
+    except psycopg2.Error as e:
+        handle_error(f"PostgreSQL Error: {e}")
 
 def insert_product_details_postgres():
-    # Insert data into the product_details table in PostgreSQL
-    productid = productid_entry.get()
-    weight = weight_entry.get()
-    width = width_entry.get()
-    colour = colour_entry.get()
-    height = height_entry.get()
-    cur_postgres.execute("INSERT INTO product_details(productid, weight, width, colour, height) VALUES (%s, %s, %s, %s, %s)",
-                (productid, weight, width, colour, height))
-    conn_postgres.commit()
-    messagebox.showinfo("Success", "PostgreSQL Product_Details data inserted successfully")
+    try:
+        # Insert data into the product_details table in PostgreSQL
+        productid = productid_entry.get()
+        weight = weight_entry.get()
+        width = width_entry.get()
+        colour = colour_entry.get()
+        height = height_entry.get()
+        cur_postgres.execute("INSERT INTO product_details(productid, weight, width, colour, height) VALUES (%s, %s, %s, %s, %s)",
+                    (productid, weight, width, colour, height))
+        conn_postgres.commit()
+    except psycopg2.Error as e:
+        conn_postgres.rollback()
+        raise e
 
 def delete_product_details_postgres():
-    # Delete product_details from the product_details table in PostgreSQL
-    productid = productid_entry_del.get()
-    cur_postgres.execute("DELETE FROM product_details WHERE productid = %s", (productid,))
-    conn_postgres.commit()
-    messagebox.showinfo("Success", "PostgreSQL Product_Details deleted successfully")
+    try:
+        # Delete product_details from the product_details table in PostgreSQL
+        productid = productid_entry_del.get()
+        cur_postgres.execute("DELETE FROM product_details WHERE productid = %s", (productid,))
+        conn_postgres.commit()
+    except psycopg2.Error as e:
+        conn_postgres.rollback()
+        raise e
 
 def insert_product_details_firestore():
-    # Insert data into the product_details collection in Firestore
-    productid = productid_entry.get()
-    weight = weight_entry.get()
-    width = width_entry.get()
-    colour = colour_entry.get()
-    height = height_entry.get()
+    try:
+        # Insert data into the product_details collection in Firestore
+        productid = productid_entry.get()
+        weight = weight_entry.get()
+        width = width_entry.get()
+        colour = colour_entry.get()
+        height = height_entry.get()
 
-    data = {
-        'productid': productid,
-        'weight': weight,
-        'width': width,
-        'colour': colour,
-        'height': height
-    }
+        data = {
+            'productid': productid,
+            'weight': weight,
+            'width': width,
+            'colour': colour,
+            'height': height
+        }
 
-    doc_ref = db_firestore.collection('product_details').add(data)
-    messagebox.showinfo("Success", "Firebase Product_Details data inserted successfully")
+        doc_ref = db_firestore.collection('product_details').add(data)
+    except Exception as e:
+        raise e
 
 def delete_product_details_firestore():
-    # Delete product_details document from the product_details collection in Firestore
-    productid = productid_entry_del.get()
-    db_firestore.collection('product_details').document(productid).delete()
-    messagebox.showinfo("Success", "Firebase Product_Details deleted successfully")
+    try:
+        # Delete product_details document from the product_details collection in Firestore
+        productid = productid_entry_del.get()
+        db_firestore.collection('product_details').document(productid).delete()
+    except Exception as e:
+        raise e
 
 # Create the main window
 window = tk.Tk()
