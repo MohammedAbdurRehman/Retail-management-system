@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox,ttk
 import psycopg2
 import firebase_admin
 from firebase_admin import credentials
@@ -27,6 +27,9 @@ try:
 except Exception as e:
     messagebox.showerror(title="Firebase Initialization Error", message=f"Error initializing Firebase: {e}")
     exit()
+
+def handle_error(message):
+    messagebox.showerror(title="Error", message=message)
 
 def insert_order_item_postgres():
     # Insert data into the order_item table in PostgreSQL
@@ -100,6 +103,73 @@ def create_order_item_table_postgres():
 def insert_data():
     insert_order_item_postgres()
     insert_order_item_firestore()
+
+def delete_data():
+    delete_order_item_postgres()
+    delete_order_item_firestore()
+
+def view_order_items_postgres():
+    try:
+        cur_postgres.execute("SELECT * FROM order_item")
+        rows = cur_postgres.fetchall()
+        if rows:
+            # Create a new window for displaying the table
+            view_window = tk.Toplevel(window)
+            view_window.title("Order Item Records (PostgreSQL)")
+
+            # Create Treeview widget for displaying data in tabular form
+            tree = ttk.Treeview(view_window, columns=("OrderItem ID", "Order ID", "Date of Order", "Quantity"))
+            tree.heading("#0", text="Index")
+            tree.heading("#1", text="OrderItem ID")
+            tree.heading("#2", text="Order ID")
+            tree.heading("#3", text="Date of Order")
+            tree.heading("#4", text="Quantity")
+
+            for i, row in enumerate(rows):
+                tree.insert("", tk.END, text=str(i+1), values=row)
+
+            tree.pack(expand=True, fill="both")
+        else:
+            messagebox.showinfo(title="Order Item Records", message="No order item records found in PostgreSQL")
+    except psycopg2.Error as e:
+        messagebox.showerror(title="Error", message=f"Error viewing data from PostgreSQL: {e}")
+
+def view_order_items_firestore():
+    try:
+        docs = db_firestore.collection('order_item').stream()
+        if docs:
+            # Create a new window for displaying the table
+            view_window = tk.Toplevel(window)
+            view_window.title("Order Item Records (Firebase)")
+
+            # Create Treeview widget for displaying data in tabular form
+            tree = ttk.Treeview(view_window, columns=("OrderItem ID", "Order ID", "Date of Order", "Quantity"))
+            tree.heading("#0", text="Index")
+            tree.heading("#1", text="OrderItem ID")
+            tree.heading("#2", text="Order ID")
+            tree.heading("#3", text="Date of Order")
+            tree.heading("#4", text="Quantity")
+
+            for i, doc in enumerate(docs):
+                order_data = doc.to_dict()
+                order_values = (
+                    doc.id,
+                    order_data['order_id'],
+                    order_data['date_of_order'],
+                    order_data['quantity']
+                )
+                tree.insert("", tk.END, text=str(i+1), values=order_values)
+
+            tree.pack(expand=True, fill="both")
+        else:
+            messagebox.showinfo(title="Order Item Records", message="No order item records found in Firebase")
+    except Exception as e:
+        messagebox.showerror(title="Error", message=f"Error viewing data from Firebase: {e}")
+
+def view_data():
+    view_order_items_firestore()
+    view_order_items_postgres()
+
 # Create the main window
 window = tk.Tk()
 window.title("Order_Item Management")
@@ -123,14 +193,22 @@ tk.Label(order_item_frame, text="Quantity:").grid(row=2, column=0)
 quantity_entry = tk.Entry(order_item_frame)
 quantity_entry.grid(row=2, column=1)
 
-# Insert/Delete Order_Item Button
-manage_order_item_button = tk.Button(order_item_frame, text="Insert/Delete Order_Item", command=insert_data)
-manage_order_item_button.grid(row=3, columnspan=2)
+# Insert Order_Item Button
+insert_order_item_button = tk.Button(order_item_frame, text="Insert Order_Item", command=insert_data)
+insert_order_item_button.grid(row=3, column=0)
+
+# Delete Order_Item Button
+delete_order_item_button = tk.Button(order_item_frame, text="Delete Order_Item", command=delete_data)
+delete_order_item_button.grid(row=3, column=1)
+
+# View Order Items Button
+view_order_items_button = tk.Button(order_item_frame, text="View Order Items", command=view_data)
+view_order_items_button.grid(row=4, columnspan=2)
 
 # Order_Item ID for deletion
-tk.Label(order_item_frame, text="Order_Item ID for Deletion:").grid(row=4, column=0)
+tk.Label(order_item_frame, text="Order_Item ID for Deletion:").grid(row=5, column=0)
 orderitem_id_entry = tk.Entry(order_item_frame)
-orderitem_id_entry.grid(row=4, column=1)
+orderitem_id_entry.grid(row=5, column=1)
 
 # Create the order_item table if not exists in PostgreSQL
 create_order_item_table_postgres()
