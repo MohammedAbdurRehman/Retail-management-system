@@ -1,95 +1,160 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox,ttk
 import psycopg2
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 
 # Initialize PostgreSQL connection
-conn_postgres = psycopg2.connect(
-    dbname="Retail Management System",
-    user="postgres",
-    password="pgadmin4",
-    host="localhost",
-    port="5432"
-)
-cur_postgres = conn_postgres.cursor()
+try:
+    conn_postgres = psycopg2.connect(
+        dbname="Retail Management System",
+        user="postgres",
+        password="pgadmin4",
+        host="localhost",
+        port="5432"
+    )
+    cur_postgres = conn_postgres.cursor()
+except psycopg2.Error as e:
+    messagebox.showerror("Error", f"PostgreSQL Connection Error: {e}")
+    exit()
 
 # Initialize Firebase Admin
-cred_firebase = credentials.Certificate('serviceAccountKey.json')
-firebase_admin.initialize_app(cred_firebase)
-db_firestore = firestore.client()
+try:
+    cred_firebase = credentials.Certificate('serviceAccountKey.json')
+    firebase_admin.initialize_app(cred_firebase)
+    db_firestore = firestore.client()
+except Exception as e:
+    messagebox.showerror("Error", f"Firebase Initialization Error: {e}")
+    exit()
+
+def handle_postgres_error(e):
+    conn_postgres.rollback()
+    messagebox.showerror("Error", f"PostgreSQL Error: {e}")
+
+def handle_firebase_error(e):
+    messagebox.showerror("Error", f"Firebase Error: {e}")
 
 def create_address_table_postgres():
-    # Create an address table in PostgreSQL
-    cur_postgres.execute("""
-        CREATE TABLE IF NOT EXISTS address (
-            addressid SERIAL PRIMARY KEY,
-            address_line1 VARCHAR(100),
-            address_line2 VARCHAR(100)
-        )
-    """)
-    conn_postgres.commit()
-    messagebox.showinfo("Success", "PostgreSQL Address table created successfully")
+    try:
+        # Create an address table in PostgreSQL
+        cur_postgres.execute("""
+            CREATE TABLE IF NOT EXISTS address (
+                addressid SERIAL PRIMARY KEY,
+                address_line1 VARCHAR(100),
+                address_line2 VARCHAR(100)
+            )
+        """)
+        conn_postgres.commit()
+        messagebox.showinfo("Success", "PostgreSQL Address table created successfully")
+    except psycopg2.Error as e:
+        handle_postgres_error(e)
 
 def insert_address_postgres():
-    # Insert data into the address table in PostgreSQL
-    address_line1 = address_line1_entry.get()
-    address_line2 = address_line2_entry.get()
-    cur_postgres.execute("INSERT INTO address (address_line1, address_line2) VALUES (%s, %s)",
-                (address_line1, address_line2))
-    conn_postgres.commit()
-    messagebox.showinfo("Success", "PostgreSQL Address data inserted successfully")
+    try:
+        # Insert data into the address table in PostgreSQL
+        address_line1 = address_line1_entry.get()
+        address_line2 = address_line2_entry.get()
+        cur_postgres.execute("INSERT INTO address (address_line1, address_line2) VALUES (%s, %s)",
+                    (address_line1, address_line2))
+        conn_postgres.commit()
+        messagebox.showinfo("Success", "PostgreSQL Address data inserted successfully")
+    except psycopg2.Error as e:
+        handle_postgres_error(e)
 
 def delete_address_postgres():
-    # Delete address from the address table in PostgreSQL
-    address_id = address_id_entry.get()
-    cur_postgres.execute("DELETE FROM address WHERE addressid = %s", (address_id,))
-    conn_postgres.commit()
-    messagebox.showinfo("Success", "PostgreSQL Address deleted successfully")
+    try:
+        # Delete address from the address table in PostgreSQL
+        address_id = address_id_entry.get()
+        cur_postgres.execute("DELETE FROM address WHERE addressid = %s", (address_id,))
+        conn_postgres.commit()
+        messagebox.showinfo("Success", "PostgreSQL Address deleted successfully")
+    except psycopg2.Error as e:
+        handle_postgres_error(e)
 
-def view_addresses_postgres():
-    # View addresses from the address table in PostgreSQL
-    cur_postgres.execute("SELECT * FROM address")
-    rows = cur_postgres.fetchall()
-    if rows:
-        address_records = ""
-        for row in rows:
-            address_records += f"Address ID: {row[0]}, Line 1: {row[1]}, Line 2: {row[2]}\n"
-        messagebox.showinfo("Address Records (PostgreSQL)", address_records)
-    else:
-        messagebox.showinfo("Address Records (PostgreSQL)", "No address records found in PostgreSQL")
+
 
 def insert_address_firestore():
-    # Insert data into the address collection in Firebase
-    address_line1 = address_line1_entry.get()
-    address_line2 = address_line2_entry.get()
+    try:
+        # Insert data into the address collection in Firebase
+        address_line1 = address_line1_entry.get()
+        address_line2 = address_line2_entry.get()
 
-    data = {
-        'address_line1': address_line1,
-        'address_line2': address_line2
-    }
+        data = {
+            'address_line1': address_line1,
+            'address_line2': address_line2
+        }
 
-    doc_ref = db_firestore.collection('addresses').add(data)
-    messagebox.showinfo("Success", "Firebase Address data inserted successfully")
+        doc_ref = db_firestore.collection('addresses').add(data)
+        messagebox.showinfo("Success", "Firebase Address data inserted successfully")
+    except Exception as e:
+        handle_firebase_error(e)
 
 def delete_address_firestore():
-    # Delete address from the address collection in Firebase
-    address_id = address_id_entry.get()
-    db_firestore.collection('addresses').document(address_id).delete()
-    messagebox.showinfo("Success", "Firebase Address deleted successfully")
+    try:
+        # Delete address from the address collection in Firebase
+        address_id = address_id_entry.get()
+        db_firestore.collection('addresses').document(address_id).delete()
+        messagebox.showinfo("Success", "Firebase Address deleted successfully")
+    except Exception as e:
+        handle_firebase_error(e)
+
+
+def view_addresses_postgres():
+    try:
+        cur_postgres.execute("SELECT * FROM address")
+        rows = cur_postgres.fetchall()
+        if rows:
+            # Create a new window for displaying the table
+            view_window = tk.Toplevel(window)
+            view_window.title("Address Records (PostgreSQL)")
+
+            # Create Treeview widget for displaying data in tabular form
+            tree = ttk.Treeview(view_window, columns=("Address ID", "Line 1", "Line 2"))
+            tree.heading("#0", text="Index")
+            tree.heading("#1", text="Address ID")
+            tree.heading("#2", text="Line 1")
+            tree.heading("#3", text="Line 2")
+
+            for i, row in enumerate(rows):
+                tree.insert("", tk.END, text=str(i+1), values=row)
+
+            tree.pack(expand=True, fill="both")
+        else:
+            messagebox.showinfo(title="Address Records", message="No address records found in PostgreSQL")
+    except psycopg2.Error as e:
+        messagebox.showerror(title="Error", message=f"Error viewing data from PostgreSQL: {e}")
 
 def view_addresses_firestore():
-    # View addresses from the address collection in Firebase
-    docs = db_firestore.collection('addresses').stream()
-    address_records = ""
-    for doc in docs:
-        address_data = doc.to_dict()
-        address_records += f"Address ID: {doc.id}, Line 1: {address_data['address_line1']}, Line 2: {address_data['address_line2']}\n"
-    if address_records:
-        messagebox.showinfo("Address Records (Firebase)", address_records)
-    else:
-        messagebox.showinfo("Address Records (Firebase)", "No address records found in Firebase")
+    try:
+        docs = db_firestore.collection('addresses').stream()
+        if docs:
+            # Create a new window for displaying the table
+            view_window = tk.Toplevel(window)
+            view_window.title("Address Records (Firebase)")
+
+            # Create Treeview widget for displaying data in tabular form
+            tree = ttk.Treeview(view_window, columns=("Address ID", "Line 1", "Line 2"))
+            tree.heading("#0", text="Index")
+            tree.heading("#1", text="Address ID")
+            tree.heading("#2", text="Line 1")
+            tree.heading("#3", text="Line 2")
+
+            for i, doc in enumerate(docs):
+                address_data = doc.to_dict()
+                address_values = (
+                    doc.id,
+                    address_data['address_line1'],
+                    address_data['address_line2']
+                )
+                tree.insert("", tk.END, text=str(i+1), values=address_values)
+
+            tree.pack(expand=True, fill="both")
+        else:
+            messagebox.showinfo(title="Address Records", message="No address records found in Firebase")
+    except Exception as e:
+        messagebox.showerror(title="Error", message=f"Error viewing data from Firebase: {e}")
+
 
 # Create the main window
 window = tk.Tk()
