@@ -23,7 +23,7 @@ db_firestore = firestore.client()
 def handle_error(message):
     messagebox.showerror(title="Error", message=message)
 
-def insert_data():
+def insert_product_details():
     try:
         # Insert data into PostgreSQL
         insert_product_details_postgres()
@@ -36,7 +36,7 @@ def insert_data():
     except Exception as e:
         handle_error(f"Firebase Error: {e}")
 
-def delete_data():
+def delete_product_details():
     try:
         # Delete data from PostgreSQL
         delete_product_details_postgres()
@@ -153,14 +153,18 @@ tk.Label(product_details_frame, text="Height:").grid(row=4, column=0)
 height_entry = tk.Entry(product_details_frame)
 height_entry.grid(row=4, column=1)
 
-# Insert/Delete Product_Details Button
-manage_product_details_button = tk.Button(product_details_frame, text="Insert/Delete Product_Details", command=insert_data)
-manage_product_details_button.grid(row=5, columnspan=2)
+# Insert Product_Details Button
+insert_product_details_button = tk.Button(product_details_frame, text="Insert Product_Details", command=insert_product_details)
+insert_product_details_button.grid(row=5, column=0)
 
-# Product_Details ID for deletion
+# Product ID for deletion
 tk.Label(product_details_frame, text="Product ID for Deletion:").grid(row=6, column=0)
 productid_entry_del = tk.Entry(product_details_frame)
 productid_entry_del.grid(row=6, column=1)
+
+# Delete Product_Details Button
+delete_product_details_button = tk.Button(product_details_frame, text="Delete Product_Details", command=delete_product_details)
+delete_product_details_button.grid(row=7, column=0)
 
 # Create the product_details table if not exists in PostgreSQL
 create_product_details_table_postgres()
