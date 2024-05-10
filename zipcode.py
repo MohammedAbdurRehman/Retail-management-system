@@ -1,96 +1,144 @@
 import tkinter as tk
+from tkinter import ttk
 from tkinter import messagebox
 import psycopg2
 import firebase_admin
 from firebase_admin import credentials, firestore
 
 # Initialize Firebase Admin
-cred_firebase = credentials.Certificate('serviceAccountKey.json')
-firebase_admin.initialize_app(cred_firebase)
-db_firestore = firestore.client()
+try:
+    cred_firebase = credentials.Certificate('serviceAccountKey.json')
+    firebase_admin.initialize_app(cred_firebase)
+    db_firestore = firestore.client()
+except Exception as e:
+    messagebox.showerror(title="Error", message=f"Firebase initialization error: {e}")
 
 # Connect to your PostgreSQL database
-conn_postgres = psycopg2.connect(
-    dbname="Retail Management System",
-    user="postgres",
-    password="pgadmin4",
-    host="localhost",
-    port="5432"
-)
-cur_postgres = conn_postgres.cursor()
+try:
+    conn_postgres = psycopg2.connect(
+        dbname="Retail Management System",
+        user="postgres",
+        password="pgadmin4",
+        host="localhost",
+        port="5432"
+    )
+    cur_postgres = conn_postgres.cursor()
+except psycopg2.Error as e:
+    messagebox.showerror(title="Error", message=f"PostgreSQL connection error: {e}")
 
 def create_zip_code_table_postgres():
-    # Create a zip code table in PostgreSQL
-    cur_postgres.execute("""
-        CREATE TABLE IF NOT EXISTS Zip_Code (
-            ZipCode VARCHAR(10) PRIMARY KEY,
-            City VARCHAR(50),
-            State VARCHAR(50)
-        )
-    """)
-    conn_postgres.commit()
-    messagebox.showinfo(title="Success", message="PostgreSQL Zip_Code table created successfully")
+    try:
+        # Create a zip code table in PostgreSQL
+        cur_postgres.execute("""
+            CREATE TABLE IF NOT EXISTS Zip_Code (
+                ZipCode VARCHAR(10) PRIMARY KEY,
+                City VARCHAR(50),
+                State VARCHAR(50)
+            )
+        """)
+        conn_postgres.commit()
+        messagebox.showinfo(title="Success", message="PostgreSQL Zip_Code table created successfully")
+    except psycopg2.Error as e:
+        messagebox.showerror(title="Error", message=f"Error creating Zip_Code table: {e}")
 
 def insert_zip_code_postgres():
-    # Insert data into the zip code table in PostgreSQL
-    zipcode = zipcode_entry.get()
-    city = city_entry.get()
-    state = state_entry.get()
-    cur_postgres.execute("INSERT INTO Zip_Code(ZipCode, City, State) VALUES (%s, %s, %s)",
-                (zipcode, city, state))
-    conn_postgres.commit()
-    messagebox.showinfo(title="Success", message="PostgreSQL Zip code data inserted successfully")
+    try:
+        # Insert data into the zip code table in PostgreSQL
+        zipcode = zipcode_entry.get()
+        city = city_entry.get()
+        state = state_entry.get()
+        cur_postgres.execute("INSERT INTO Zip_Code(ZipCode, City, State) VALUES (%s, %s, %s)",
+                    (zipcode, city, state))
+        conn_postgres.commit()
+        messagebox.showinfo(title="Success", message="PostgreSQL Zip code data inserted successfully")
+    except psycopg2.Error as e:
+        messagebox.showerror(title="Error", message=f"Error inserting Zip code data: {e}")
 
 def delete_zip_code_postgres():
-    # Delete zip code from the zip code table in PostgreSQL
-    zipcode = delete_zipcode_entry.get()
-    cur_postgres.execute("DELETE FROM Zip_Code WHERE ZipCode = %s", (zipcode,))
-    conn_postgres.commit()
-    messagebox.showinfo(title="Success", message="PostgreSQL Zip code deleted successfully")
+    try:
+        # Delete zip code from the zip code table in PostgreSQL
+        zipcode = delete_zipcode_entry.get()
+        cur_postgres.execute("DELETE FROM Zip_Code WHERE ZipCode = %s", (zipcode,))
+        conn_postgres.commit()
+        messagebox.showinfo(title="Success", message="PostgreSQL Zip code deleted successfully")
+    except psycopg2.Error as e:
+        messagebox.showerror(title="Error", message=f"Error deleting Zip code data: {e}")
 
 def view_zip_codes_postgres():
-    # View zip codes from the zip code table in PostgreSQL
-    cur_postgres.execute("SELECT * FROM Zip_Code")
-    rows = cur_postgres.fetchall()
-    if rows:
-        zip_code_records = ""
-        for row in rows:
-            zip_code_records += f"Zip Code: {row[0]}, City: {row[1]}, State: {row[2]}\n"
-        messagebox.showinfo(title="Zip Code Records (PostgreSQL)", message=zip_code_records)
-    else:
-        messagebox.showinfo(title="Zip Code Records (PostgreSQL)", message="No zip code records found")
+    try:
+        cur_postgres.execute("SELECT * FROM Zip_Code")
+        rows = cur_postgres.fetchall()
+        if rows:
+            # Create a new window for displaying the table
+            view_window = tk.Toplevel(window)
+            view_window.title("Zip Code Records (PostgreSQL)")
+
+            # Create Treeview widget for displaying data in tabular form
+            tree = ttk.Treeview(view_window, columns=("Zip Code", "City", "State"))
+            tree.heading("#0", text="Index")
+            tree.heading("#1", text="Zip Code")
+            tree.heading("#2", text="City")
+            tree.heading("#3", text="State")
+
+            for i, row in enumerate(rows):
+                tree.insert("", tk.END, text=str(i+1), values=row)
+
+            tree.pack(expand=True, fill="both")
+        else:
+            messagebox.showinfo(title="Zip Code Records", message="No zip code records found in PostgreSQL")
+    except psycopg2.Error as e:
+        messagebox.showerror(title="Error", message=f"Error viewing data from PostgreSQL: {e}")
 
 def insert_zip_code_firestore():
-    # Insert data into the zip code collection in Firebase
-    zipcode = zipcode_entry.get()
-    city = city_entry.get()
-    state = state_entry.get()
-
-    data = {
-        'City': city,
-        'State': state
-    }
-
-    db_firestore.collection('zip_codes').document(zipcode).set(data)
-    messagebox.showinfo(title="Success", message="Firebase Zip code data inserted successfully")
+    try:
+        # Insert data into the zip code collection in Firebase
+        zipcode = zipcode_entry.get()
+        city = city_entry.get()
+        state = state_entry.get()
+        data = {'City': city, 'State': state}
+        db_firestore.collection('zip_codes').document(zipcode).set(data)
+        messagebox.showinfo(title="Success", message="Firebase Zip code data inserted successfully")
+    except Exception as e:
+        messagebox.showerror(title="Error", message=f"Error inserting Zip code data to Firebase: {e}")
 
 def delete_zip_code_firestore():
-    # Delete zip code from the zip code collection in Firebase
-    zipcode = delete_zipcode_entry.get()
-    db_firestore.collection('zip_codes').document(zipcode).delete()
-    messagebox.showinfo(title="Success", message="Firebase Zip code deleted successfully")
+    try:
+        # Delete zip code from the zip code collection in Firebase
+        zipcode = delete_zipcode_entry.get()
+        db_firestore.collection('zip_codes').document(zipcode).delete()
+        messagebox.showinfo(title="Success", message="Firebase Zip code deleted successfully")
+    except Exception as e:
+        messagebox.showerror(title="Error", message=f"Error deleting Zip code data from Firebase: {e}")
 
 def view_zip_codes_firestore():
-    # View zip codes from the zip code collection in Firebase
-    docs = db_firestore.collection('zip_codes').stream()
-    zip_code_records = ""
-    for doc in docs:
-        zip_data = doc.to_dict()
-        zip_code_records += f"Zip Code: {doc.id}, City: {zip_data['City']}, State: {zip_data['State']}\n"
-    if zip_code_records:
-        messagebox.showinfo(title="Zip Code Records (Firebase)", message=zip_code_records)
-    else:
-        messagebox.showinfo(title="Zip Code Records (Firebase)", message="No zip code records found in Firebase")
+    try:
+        docs = db_firestore.collection('zip_codes').stream()
+        if docs:
+            # Create a new window for displaying the table
+            view_window = tk.Toplevel(window)
+            view_window.title("Zip Code Records (Firebase)")
+
+            # Create Treeview widget for displaying data in tabular form
+            tree = ttk.Treeview(view_window, columns=("Zip Code", "City", "State"))
+            tree.heading("#0", text="Index")
+            tree.heading("#1", text="Zip Code")
+            tree.heading("#2", text="City")
+            tree.heading("#3", text="State")
+
+            for i, doc in enumerate(docs):
+                zip_data = doc.to_dict()
+                zip_values = (
+                    doc.id,
+                    zip_data['City'],
+                    zip_data['State']
+                )
+                tree.insert("", tk.END, text=str(i+1), values=zip_values)
+
+            tree.pack(expand=True, fill="both")
+        else:
+            messagebox.showinfo(title="Zip Code Records", message="No zip code records found in Firebase")
+    except Exception as e:
+        messagebox.showerror(title="Error", message=f"Error viewing data from Firebase: {e}")
 
 # Create the main window
 window = tk.Tk()
