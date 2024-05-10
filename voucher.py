@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 from tkinter import messagebox
 import psycopg2
 import firebase_admin
@@ -10,83 +11,129 @@ firebase_admin.initialize_app(cred_firebase)
 db_firestore = firestore.client()
 
 # Connect to your PostgreSQL database
-conn_postgres = psycopg2.connect(
-    dbname="Retail Management System",
-    user="postgres",
-    password="pgadmin4",
-    host="localhost",
-    port="5432"
-)
-cur_postgres = conn_postgres.cursor()
+try:
+    conn_postgres = psycopg2.connect(
+        dbname="Retail Management System",
+        user="postgres",
+        password="pgadmin4",
+        host="localhost",
+        port="5432"
+    )
+    cur_postgres = conn_postgres.cursor()
+except psycopg2.Error as e:
+    messagebox.showerror(title="Error", message=f"Error connecting to PostgreSQL: {e}")
 
 def create_voucher_table_postgres():
-    # Create a voucher table in PostgreSQL
-    cur_postgres.execute("""
-        CREATE TABLE IF NOT EXISTS Voucher (
-            Voucher_number VARCHAR(20) PRIMARY KEY,
-            Discount_percent INT
-        )
-    """)
-    conn_postgres.commit()
-    messagebox.showinfo(title="Success", message="PostgreSQL Voucher table created successfully")
+    try:
+        # Create a voucher table in PostgreSQL
+        cur_postgres.execute("""
+            CREATE TABLE IF NOT EXISTS Voucher (
+                Voucher_number VARCHAR(20) PRIMARY KEY,
+                Discount_percent INT
+            )
+        """)
+        conn_postgres.commit()
+        messagebox.showinfo(title="Success", message="PostgreSQL Voucher table created successfully")
+    except psycopg2.Error as e:
+        messagebox.showerror(title="Error", message=f"Error creating voucher table in PostgreSQL: {e}")
 
 def insert_voucher_postgres():
-    # Insert data into the voucher table in PostgreSQL
-    voucher_id = voucher_id_entry.get()
-    discount_percent = discount_percent_entry.get()
-    cur_postgres.execute("INSERT INTO Voucher(Voucher_number, Discount_percent) VALUES (%s, %s)",
-                (voucher_id, discount_percent))
-    conn_postgres.commit()
-    messagebox.showinfo(title="Success", message="PostgreSQL Voucher data inserted successfully")
+    try:
+        # Insert data into the voucher table in PostgreSQL
+        voucher_id = voucher_id_entry.get()
+        discount_percent = discount_percent_entry.get()
+        cur_postgres.execute("INSERT INTO Voucher(Voucher_number, Discount_percent) VALUES (%s, %s)",
+                    (voucher_id, discount_percent))
+        conn_postgres.commit()
+        messagebox.showinfo(title="Success", message="PostgreSQL Voucher data inserted successfully")
+    except psycopg2.Error as e:
+        messagebox.showerror(title="Error", message=f"Error inserting data into PostgreSQL: {e}")
 
 def delete_voucher_postgres():
-    # Delete voucher from the voucher table in PostgreSQL
-    voucher_id = delete_voucher_id_entry.get()
-    cur_postgres.execute("DELETE FROM Voucher WHERE Voucher_ID = %s", (voucher_id,))
-    conn_postgres.commit()
-    messagebox.showinfo(title="Success", message="PostgreSQL Voucher deleted successfully")
+    try:
+        # Delete voucher from the voucher table in PostgreSQL
+        voucher_id = delete_voucher_id_entry.get()
+        cur_postgres.execute("DELETE FROM Voucher WHERE Voucher_number = %s", (voucher_id,))
+        conn_postgres.commit()
+        messagebox.showinfo(title="Success", message="PostgreSQL Voucher deleted successfully")
+    except psycopg2.Error as e:
+        messagebox.showerror(title="Error", message=f"Error deleting voucher from PostgreSQL: {e}")
 
 def view_vouchers_postgres():
-    # View vouchers from the voucher table in PostgreSQL
-    cur_postgres.execute("SELECT * FROM Voucher")
-    rows = cur_postgres.fetchall()
-    if rows:
-        voucher_records = ""
-        for row in rows:
-            voucher_records += f"Voucher ID: {row[0]}, Discount Percent: {row[1]}\n"
-        messagebox.showinfo(title="Voucher Records (PostgreSQL)", message=voucher_records)
-    else:
-        messagebox.showinfo(title="Voucher Records (PostgreSQL)", message="No voucher records found")
+    try:
+        cur_postgres.execute("SELECT * FROM Voucher")
+        rows = cur_postgres.fetchall()
+        if rows:
+            # Create a new window for displaying the table
+            view_window = tk.Toplevel(window)
+            view_window.title("Voucher Records (PostgreSQL)")
+
+            # Create Treeview widget for displaying data in tabular form
+            tree = ttk.Treeview(view_window, columns=("Voucher ID", "Discount Percent"))
+            tree.heading("#0", text="Index")
+            tree.heading("#1", text="Voucher ID")
+            tree.heading("#2", text="Discount Percent")
+
+            for i, row in enumerate(rows):
+                tree.insert("", tk.END, text=str(i+1), values=row)
+
+            tree.pack(expand=True, fill="both")
+        else:
+            messagebox.showinfo(title="Voucher Records", message="No voucher records found in PostgreSQL")
+    except psycopg2.Error as e:
+        messagebox.showerror(title="Error", message=f"Error viewing data from PostgreSQL: {e}")
 
 def insert_voucher_firestore():
-    # Insert data into the voucher collection in Firebase
-    voucher_id = voucher_id_entry.get()
-    discount_percent = discount_percent_entry.get()
+    try:
+        # Insert data into the voucher collection in Firebase
+        voucher_id = voucher_id_entry.get()
+        discount_percent = discount_percent_entry.get()
 
-    data = {
-        'Discount_percent': int(discount_percent)
-    }
+        data = {
+            'Discount_percent': int(discount_percent)
+        }
 
-    db_firestore.collection('vouchers').document(voucher_id).set(data)
-    messagebox.showinfo(title="Success", message="Firebase Voucher data inserted successfully")
+        db_firestore.collection('vouchers').document(voucher_id).set(data)
+        messagebox.showinfo(title="Success", message="Firebase Voucher data inserted successfully")
+    except Exception as e:
+        messagebox.showerror(title="Error", message=f"Error inserting data into Firebase: {e}")
 
 def delete_voucher_firestore():
-    # Delete voucher from the voucher collection in Firebase
-    voucher_id = delete_voucher_id_entry.get()
-    db_firestore.collection('vouchers').document(voucher_id).delete()
-    messagebox.showinfo(title="Success", message="Firebase Voucher deleted successfully")
+    try:
+        # Delete voucher from the voucher collection in Firebase
+        voucher_id = delete_voucher_id_entry.get()
+        db_firestore.collection('vouchers').document(voucher_id).delete()
+        messagebox.showinfo(title="Success", message="Firebase Voucher deleted successfully")
+    except Exception as e:
+        messagebox.showerror(title="Error", message=f"Error deleting voucher from Firebase: {e}")
 
 def view_vouchers_firestore():
-    # View vouchers from the voucher collection in Firebase
-    docs = db_firestore.collection('vouchers').stream()
-    voucher_records = ""
-    for doc in docs:
-        voucher_data = doc.to_dict()
-        voucher_records += f"Voucher ID: {doc.id}, Discount Percent: {voucher_data['Discount_percent']}\n"
-    if voucher_records:
-        messagebox.showinfo(title="Voucher Records (Firebase)", message=voucher_records)
-    else:
-        messagebox.showinfo(title="Voucher Records (Firebase)", message="No voucher records found in Firebase")
+    try:
+        docs = db_firestore.collection('vouchers').stream()
+        if docs:
+            # Create a new window for displaying the table
+            view_window = tk.Toplevel(window)
+            view_window.title("Voucher Records (Firebase)")
+
+            # Create Treeview widget for displaying data in tabular form
+            tree = ttk.Treeview(view_window, columns=("Voucher ID", "Discount Percent"))
+            tree.heading("#0", text="Index")
+            tree.heading("#1", text="Voucher ID")
+            tree.heading("#2", text="Discount Percent")
+
+            for i, doc in enumerate(docs):
+                voucher_data = doc.to_dict()
+                voucher_values = (
+                    doc.id,
+                    voucher_data['Discount_percent']
+                )
+                tree.insert("", tk.END, text=str(i+1), values=voucher_values)
+
+            tree.pack(expand=True, fill="both")
+        else:
+            messagebox.showinfo(title="Voucher Records", message="No voucher records found in Firebase")
+    except Exception as e:
+        messagebox.showerror(title="Error", message=f"Error viewing data from Firebase: {e}")
 
 # Create the main window
 window = tk.Tk()
