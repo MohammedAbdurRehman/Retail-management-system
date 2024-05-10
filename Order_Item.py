@@ -6,85 +6,100 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 
 # Initialize PostgreSQL connection
-conn_postgres = psycopg2.connect(
-    dbname="Retail Management System",
-    user="postgres",
-    password="pgadmin4",
-    host="localhost",
-    port="5432"
-)
-cur_postgres = conn_postgres.cursor()
+try:
+    conn_postgres = psycopg2.connect(
+        dbname="Retail Management System",
+        user="postgres",
+        password="pgadmin4",
+        host="localhost",
+        port="5432"
+    )
+    cur_postgres = conn_postgres.cursor()
+except psycopg2.Error as e:
+    messagebox.showerror(title="PostgreSQL Connection Error", message=f"Error connecting to PostgreSQL: {e}")
+    exit()
 
 # Initialize Firebase Admin
-cred_firebase = credentials.Certificate('serviceAccountKey.json')
-firebase_admin.initialize_app(cred_firebase)
-db_firestore = firestore.client()
-
-def insert_data():
-    # Insert data into PostgreSQL
-    insert_order_item_postgres()
-
-    # Insert data into Firebase
-    insert_order_item_firestore()
-
-def delete_data():
-    # Delete data from PostgreSQL
-    delete_order_item_postgres()
-
-    # Delete data from Firebase
-    delete_order_item_firestore()
-
-def create_order_item_table_postgres():
-    # Create an order_item table in PostgreSQL
-    cur_postgres.execute("""
-        CREATE TABLE IF NOT EXISTS order_item (
-            orderitem_id SERIAL PRIMARY KEY,
-            order_id INT,
-            date_of_order DATE,
-            quantity INT
-        )
-    """)
-    conn_postgres.commit()
-    messagebox.showinfo("Success", "PostgreSQL Order_Item table created successfully")
+try:
+    cred_firebase = credentials.Certificate('serviceAccountKey.json')
+    firebase_admin.initialize_app(cred_firebase)
+    db_firestore = firestore.client()
+except Exception as e:
+    messagebox.showerror(title="Firebase Initialization Error", message=f"Error initializing Firebase: {e}")
+    exit()
 
 def insert_order_item_postgres():
     # Insert data into the order_item table in PostgreSQL
-    order_id = order_id_entry.get()
-    date_of_order = date_of_order_entry.get()
-    quantity = quantity_entry.get()
-    cur_postgres.execute("INSERT INTO order_item(order_id, date_of_order, quantity) VALUES (%s, %s, %s)",
-                (order_id, date_of_order, quantity))
-    conn_postgres.commit()
-    messagebox.showinfo("Success", "PostgreSQL Order_Item data inserted successfully")
+    try:
+        order_id = order_id_entry.get()
+        date_of_order = date_of_order_entry.get()
+        quantity = quantity_entry.get()
+        cur_postgres.execute("INSERT INTO order_item(order_id, date_of_order, quantity) VALUES (%s, %s, %s)",
+                    (order_id, date_of_order, quantity))
+        conn_postgres.commit()
+        messagebox.showinfo("Success", "PostgreSQL Order_Item data inserted successfully")
+    except psycopg2.Error as e:
+        conn_postgres.rollback()
+        messagebox.showerror(title="PostgreSQL Error", message=f"Error inserting data into PostgreSQL: {e}")
 
 def delete_order_item_postgres():
     # Delete order_item from the order_item table in PostgreSQL
-    orderitem_id = orderitem_id_entry.get()
-    cur_postgres.execute("DELETE FROM order_item WHERE orderitem_id = %s", (orderitem_id,))
-    conn_postgres.commit()
-    messagebox.showinfo("Success", "PostgreSQL Order_Item deleted successfully")
+    try:
+        orderitem_id = orderitem_id_entry.get()
+        cur_postgres.execute("DELETE FROM order_item WHERE orderitem_id = %s", (orderitem_id,))
+        conn_postgres.commit()
+        messagebox.showinfo("Success", "PostgreSQL Order_Item deleted successfully")
+    except psycopg2.Error as e:
+        conn_postgres.rollback()
+        messagebox.showerror(title="PostgreSQL Error", message=f"Error deleting data from PostgreSQL: {e}")
 
 def insert_order_item_firestore():
     # Insert data into the order_item collection in Firestore
-    order_id = order_id_entry.get()
-    date_of_order = date_of_order_entry.get()
-    quantity = quantity_entry.get()
+    try:
+        order_id = order_id_entry.get()
+        date_of_order = date_of_order_entry.get()
+        quantity = quantity_entry.get()
 
-    data = {
-        'order_id': order_id,
-        'date_of_order': date_of_order,
-        'quantity': quantity
-    }
+        data = {
+            'order_id': order_id,
+            'date_of_order': date_of_order,
+            'quantity': quantity
+        }
 
-    doc_ref = db_firestore.collection('order_item').add(data)
-    messagebox.showinfo("Success", "Firebase Order_Item data inserted successfully")
+        doc_ref = db_firestore.collection('order_item').add(data)
+        messagebox.showinfo("Success", "Firebase Order_Item data inserted successfully")
+    except Exception as e:
+        messagebox.showerror(title="Firebase Error", message=f"Error inserting data into Firestore: {e}")
 
 def delete_order_item_firestore():
     # Delete order_item document from the order_item collection in Firestore
-    orderitem_id = orderitem_id_entry.get()
-    db_firestore.collection('order_item').document(orderitem_id).delete()
-    messagebox.showinfo("Success", "Firebase Order_Item deleted successfully")
+    try:
+        orderitem_id = orderitem_id_entry.get()
+        db_firestore.collection('order_item').document(orderitem_id).delete()
+        messagebox.showinfo("Success", "Firebase Order_Item deleted successfully")
+    except Exception as e:
+        messagebox.showerror(title="Firebase Error", message=f"Error deleting data from Firestore: {e}")
 
+def create_order_item_table_postgres():
+    # Create an order_item table in PostgreSQL
+    try:
+        cur_postgres.execute("""
+            CREATE TABLE IF NOT EXISTS order_item (
+                orderitem_id SERIAL PRIMARY KEY,
+                order_id INT,
+                date_of_order DATE,
+                quantity INT
+            )
+        """)
+        conn_postgres.commit()
+        messagebox.showinfo("Success", "PostgreSQL Order_Item table created successfully")
+    except psycopg2.Error as e:
+        conn_postgres.rollback()
+        messagebox.showerror(title="PostgreSQL Error", message=f"Error creating table in PostgreSQL: {e}")
+
+def insert_data():
+    insert_order_item_postgres()
+    insert_order_item_firestore()
 # Create the main window
 window = tk.Tk()
 window.title("Order_Item Management")
