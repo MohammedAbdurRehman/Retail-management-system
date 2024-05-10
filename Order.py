@@ -1,89 +1,103 @@
 import tkinter as tk
+from tkinter import ttk
 from tkinter import messagebox
 import psycopg2
 import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
+from firebase_admin import credentials, firestore
 
 # Initialize PostgreSQL connection
-conn_postgres = psycopg2.connect(
-    dbname="Retail Management System",
-    user="postgres",
-    password="pgadmin4",
-    host="localhost",
-    port="5432"
-)
-cur_postgres = conn_postgres.cursor()
+try:
+    conn_postgres = psycopg2.connect(
+        dbname="Retail Management System",
+        user="postgres",
+        password="pgadmin4",
+        host="localhost",
+        port="5432"
+    )
+    cur_postgres = conn_postgres.cursor()
+except psycopg2.Error as e:
+    messagebox.showerror("Error", f"Error connecting to PostgreSQL: {e}")
 
 # Initialize Firebase Admin
-cred_firebase = credentials.Certificate('serviceAccountKey.json')
-firebase_admin.initialize_app(cred_firebase)
-db_firestore = firestore.client()
+try:
+    cred_firebase = credentials.Certificate('serviceAccountKey.json')
+    firebase_admin.initialize_app(cred_firebase)
+    db_firestore = firestore.client()
+except Exception as e:
+    messagebox.showerror("Error", f"Error initializing Firebase Admin: {e}")
 
 def insert_order():
-    # Insert data into PostgreSQL
-    insert_order_postgres()
-
-    # Insert data into Firebase
-    insert_order_firestore()
+    try:
+        insert_order_postgres()
+        insert_order_firestore()
+    except Exception as e:
+        messagebox.showerror("Error", f"Error inserting order: {e}")
 
 def delete_order():
-    # Delete data from PostgreSQL
-    delete_order_postgres()
-
-    # Delete data from Firebase
-    delete_order_firestore()
+    try:
+        delete_order_postgres()
+        delete_order_firestore()
+    except Exception as e:
+        messagebox.showerror("Error", f"Error deleting order: {e}")
 
 def create_order_table_postgres():
-    # Create an order table in PostgreSQL
-    cur_postgres.execute("""
-        CREATE TABLE IF NOT EXISTS orders(
-            order_id SERIAL PRIMARY KEY,
-            shippment_duration VARCHAR(50),
-            order_date DATE,
-            status VARCHAR(50)
-        )
-    """)
-    conn_postgres.commit()
-    messagebox.showinfo("Success", "PostgreSQL Order table created successfully")
+    try:
+        cur_postgres.execute("""
+            CREATE TABLE IF NOT EXISTS orders(
+                order_id SERIAL PRIMARY KEY,
+                shippment_duration VARCHAR(50),
+                order_date DATE,
+                status VARCHAR(50)
+            )
+        """)
+        conn_postgres.commit()
+        messagebox.showinfo("Success", "PostgreSQL Order table created successfully")
+    except psycopg2.Error as e:
+        messagebox.showerror("Error", f"Error creating order table: {e}")
 
 def insert_order_postgres():
-    # Insert data into the order table in PostgreSQL
-    shipment_duration = shipment_duration_entry.get()
-    order_date = order_date_entry.get()
-    status = status_entry.get()
-    cur_postgres.execute("INSERT INTO orders (shippment_duration, order_date, status) VALUES (%s, %s, %s)",
-                (shipment_duration, order_date, status))
-    conn_postgres.commit()
-    messagebox.showinfo("Success", "PostgreSQL Order data inserted successfully")
+    try:
+        shipment_duration = shipment_duration_entry.get()
+        order_date = order_date_entry.get()
+        status = status_entry.get()
+        cur_postgres.execute("INSERT INTO orders (shippment_duration, order_date, status) VALUES (%s, %s, %s)",
+                    (shipment_duration, order_date, status))
+        conn_postgres.commit()
+        messagebox.showinfo("Success", "PostgreSQL Order data inserted successfully")
+    except psycopg2.Error as e:
+        messagebox.showerror("Error", f"Error inserting order into PostgreSQL: {e}")
 
 def delete_order_postgres():
-    # Delete order from the order table in PostgreSQL
-    order_id = order_id_entry.get()
-    cur_postgres.execute("DELETE FROM orders WHERE order_id = %s", (order_id,))
-    conn_postgres.commit()
-    messagebox.showinfo("Success", "PostgreSQL Order deleted successfully")
+    try:
+        order_id = order_id_entry.get()
+        cur_postgres.execute("DELETE FROM orders WHERE order_id = %s", (order_id,))
+        conn_postgres.commit()
+        messagebox.showinfo("Success", "PostgreSQL Order deleted successfully")
+    except psycopg2.Error as e:
+        messagebox.showerror("Error", f"Error deleting order from PostgreSQL: {e}")
 
 def insert_order_firestore():
-    # Insert data into the order collection in Firestore
-    shipment_duration = shipment_duration_entry.get()
-    order_date = order_date_entry.get()
-    status = status_entry.get()
-
-    data = {
-        'shipment_duration': shipment_duration,
-        'order_date': order_date,
-        'status': status
-    }
-
-    doc_ref = db_firestore.collection('orders').add(data)
-    messagebox.showinfo("Success", "Firebase Order data inserted successfully")
+    try:
+        shipment_duration = shipment_duration_entry.get()
+        order_date = order_date_entry.get()
+        status = status_entry.get()
+        data = {
+            'shipment_duration': shipment_duration,
+            'order_date': order_date,
+            'status': status
+        }
+        doc_ref = db_firestore.collection('orders').add(data)
+        messagebox.showinfo("Success", "Firebase Order data inserted successfully")
+    except Exception as e:
+        messagebox.showerror("Error", f"Error inserting order into Firebase: {e}")
 
 def delete_order_firestore():
-    # Delete order document from the orders collection in Firestore
-    order_id = order_id_entry.get()
-    db_firestore.collection('orders').document(order_id).delete()
-    messagebox.showinfo("Success", "Firebase Order deleted successfully")
+    try:
+        order_id = order_id_entry.get()
+        db_firestore.collection('orders').document(order_id).delete()
+        messagebox.showinfo("Success", "Firebase Order deleted successfully")
+    except Exception as e:
+        messagebox.showerror("Error", f"Error deleting order from Firebase: {e}")
 
 # Create the main window
 window = tk.Tk()
