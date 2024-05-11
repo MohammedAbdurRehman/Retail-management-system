@@ -16,9 +16,7 @@
 * Review
 
 ## ERD and Project Schema:
-![image](https://github.com/MohammedAbdurRehman/Retail-management-system/blob/main/ERD.png)
-
-![image](https://github.com/MohammedAbdurRehman/Retail-management-system/blob/main/Schema.png)
+![image](https://github.com/MohammedAbdurRehman/Retail-management-system/assets/162794845/6caba491-8499-45a4-92aa-285fb9c119d8)
 
 ## Semantic Object Model Diagram:
 ![image](https://github.com/MohammedAbdurRehman/Retail-management-system/assets/162794845/2283b502-3ec5-4084-9def-6cc5700658e7)
