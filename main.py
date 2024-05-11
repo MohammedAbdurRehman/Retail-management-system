@@ -13,6 +13,7 @@ def run_table_file(table_name):
         messagebox.showerror("Error", f"Python file for table {table_name} not found!")
 
 # Create the main window
+
 window = tk.Tk()
 window.title("Retail Management System")  # Added title here
 window.geometry("800x600")  # Set window size
