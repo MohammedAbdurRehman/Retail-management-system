@@ -1,5 +1,12 @@
 # Retail Management System
+## Overview:
+Retail Management System is designed to manage data of employees, customers, product, orders and other aspects related to Retail Store listed below
 
+## Purpose:
+The primary purpose of the Retail Management System Database is to store and manage essential data for retail operations. This includes customer details such as names, addresses, contact information, as well as product information like product IDs, categories, and quantities. The database serves as a central repository for retail-related data, allowing for efficient retrieval and management.
+
+## Key Features:
+The key feature of our Management System is that along with managing the data on local machine using your localhost' database i.e. **Postgres** it also stores and manages data on a cloud based platform i.e. **Firebase-Firestore-Database** allowing to access the same data on multiple devices without any hastle
 ## Entities:
 * Employee
 * Customer
@@ -106,9 +113,7 @@ The project can be navigated by running main.py file in the repository, Interfac
   * Quality Rating
 
 ## Project Working:
-This Project includes 14 total files including the main interface file and 13 files 1 for each table with their functionality explained in project description, Main interface file asks the user about the operation he/she wants to perform and then on user selection to insert in a particulat table, Program for that table is called and allows user to perform this operation, **Key feature of this project is that on a single click data gets Stored, Delete or viewed from two databases i.e.**
-* PostGres
-* Firestore
+This Project includes 14 total files including the main interface file and 13 files 1 for each table with their functionality explained in project description, Main interface file asks the user about the operation he/she wants to perform and then on user selection to insert in a particulat table, Program for that table is called and allows user to perform this operation.
 
  
 
