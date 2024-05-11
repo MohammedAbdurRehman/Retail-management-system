@@ -5,7 +5,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 try:
-    # Initialize PostgreSQL connection
+# Initialize PostgreSQL connection
     conn_postgres = psycopg2.connect(
         dbname="Retail Management System",
         user="postgres",
