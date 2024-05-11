@@ -13,13 +13,12 @@ def run_table_file(table_name):
         messagebox.showerror("Error", f"Python file for table {table_name} not found!")
 
 # Create the main window
-
 window = tk.Tk()
 window.title("Retail Management System")  # Added title here
 window.geometry("800x600")  # Set window size
 
 # Load the JPG image and convert it to a compatible format
-jpg_image = Image.open("/Users/muhammedabdurehman/PycharmProjects/DBMSproject/Types-of-Retail-Stores-2.jpg")  # Replace "path_to_your_image.jpg" with your JPG image path
+jpg_image = Image.open("Types-of-Retail-Stores-2.jpg")  # Replace "path_to_your_image.jpg" with your JPG image path
 bg_image = ImageTk.PhotoImage(jpg_image)
 
 # Create a canvas for the background image
@@ -55,7 +54,8 @@ tables = [
     "Voucher",
     "Product Group",
     "Product Description",
-    "Review"
+    "Review",
+    "Payment"
 ]
 
 # Function to handle button click for each table
