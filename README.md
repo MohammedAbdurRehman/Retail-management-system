@@ -22,6 +22,7 @@
 ![image](https://github.com/MohammedAbdurRehman/Retail-management-system/assets/162794845/2283b502-3ec5-4084-9def-6cc5700658e7)
 
 ## Database Project Architecture Diagram:
+![image](https://github.com/MohammedAbdurRehman/Retail-management-system/assets/162794845/1dc8f404-b010-4902-a1bd-9be49ecbc90c)
 
 ## Project Description:
 
