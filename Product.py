@@ -9,6 +9,7 @@ cred_firebase = credentials.Certificate('serviceAccountKey.json')
 firebase_admin.initialize_app(cred_firebase)
 db_firestore = firestore.client()
 
+
 # Connect to your PostgreSQL database
 conn_postgres = psycopg2.connect(
     dbname="Retail Management System",
